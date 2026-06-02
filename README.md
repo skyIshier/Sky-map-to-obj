@@ -14,15 +14,23 @@
 【文件清单】
 
 必备文件：
+
 ├── Sky_Bstbake.py          # 核心地形解析引擎
+
 ├── 启动.py                  # 单地图导出工具（推荐）
+
 ├── 批量地图转换.py           # 批量导出工具
+
 ├── 单个转换.py               # bin ↔ json 转换器
+
 ├── meshtoobj.py             # .mesh 模型解析器
+
 └── zh字典.py                # 中文翻译表（可选）
 
 文件夹：
+
 ├── mesh/                    # 存放 .mesh 模型文件
+
 └── _meshopt/                # Windows 专用（存放 meshopt2.dll）
 
 
