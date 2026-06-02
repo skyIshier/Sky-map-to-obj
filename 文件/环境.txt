@@ -1,0 +1,28 @@
+# 1. 更新包列表
+pkg update && pkg upgrade
+
+# 2. 安装 Python
+pkg install python
+
+# 3. 安装 pip（通常已自带）
+python -m ensurepip
+
+# 4. 安装基础编译工具（用于 meshoptimizer）
+pkg install clang cmake make binutils git
+
+# 1. LZ4 解压库（必需）
+pip install lz4
+
+# 2. meshoptimizer 解码库（核心，用于精细地形）
+pip install meshoptimizer
+
+# 如果 pip 安装失败，从源码编译：
+git clone https://github.com/zeux/meshoptimizer.git
+cd meshoptimizer
+pip install .
+
+# Windows: 安装 Python 3.8+
+pip install lz4 meshoptimizer
+
+# Linux/Mac
+pip3 install lz4 meshoptimizer
