@@ -202,8 +202,13 @@ A6: 查看生成的 batch_export_*.txt 日志文件
 原项目地址：https://github.com/ThatSkyOldServer/SkyBstbake
 
 特别感谢:
+
 雨人-提供部分脚本
+
 落秋-提供部分脚本
+
 potato-提供部分脚本
+
 Miau-提供部分脚本
+
 十二-制作
