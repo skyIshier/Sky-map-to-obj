@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-批量地图导出工具 v6.6 - 修复镜像问题（翻转 X 轴）
+批量地图导出工具 v7.0 - 自动生成颜色（不硬编码）
 遍历 level 目录下的所有地图文件夹，批量导出 OBJ
 输出到和 level 同级的"输出"文件夹
 支持选择是否导出标记小球
@@ -14,6 +14,7 @@ import math
 import subprocess
 import time
 import shutil
+import hashlib
 from datetime import datetime
 from collections import OrderedDict
 from pathlib import Path
@@ -70,84 +71,44 @@ except ImportError as e:
     print(f"[WARN] Sky_Bstbake.py 导入失败: {e}")
 
 # ============================================================
-# 标记分类定义（与启动.py 保持一致）
+# 全局颜色映射（跨地图共享）
 # ============================================================
-MARKER_CATEGORIES = {
-    '传送门': {'keywords': ['Portal'], 'color': (1.0, 0.3, 0.3), 'enabled': True},
-    '冥想区': {'keywords': ['MeditationArea'], 'color': (0.3, 0.5, 1.0), 'enabled': True},
-    'NPC': {'keywords': ['Npc'], 'color': (0.2, 0.8, 0.2), 'enabled': True},
-    '检查点': {'keywords': ['Checkpoint'], 'color': (1.0, 0.5, 0.0), 'enabled': True},
-    '标记点': {'keywords': ['Marker'], 'color': (1.0, 0.8, 0.2), 'enabled': True},
-    '边界': {'keywords': ['Boundary'], 'color': (1.0, 0.0, 0.0), 'enabled': True},
-    '风力': {'keywords': ['Wind'], 'color': (0.5, 0.8, 1.0), 'enabled': True},
-    '水体': {'keywords': ['Water'], 'color': (0.2, 0.5, 1.0), 'enabled': True},
-    '时间轴': {'keywords': ['Timeline'], 'color': (0.8, 0.3, 0.8), 'enabled': True},
-    '启用开关': {'keywords': ['Enable'], 'color': (0.5, 0.5, 0.5), 'enabled': True},
-    '粒子生成': {'keywords': ['SpawnMotes', 'Spawn'], 'color': (1.0, 1.0, 0.5), 'enabled': True},
-    '音效': {'keywords': ['SoundEmitter'], 'color': (0.2, 0.8, 0.8), 'enabled': True},
-    '光源': {'keywords': ['PointLight'], 'color': (1.0, 0.9, 0.4), 'enabled': True},
-    '火焰': {'keywords': ['Flame'], 'color': (1.0, 0.4, 0.1), 'enabled': True},
-}
+_global_color_map = {}
+_global_color_list = []
 
-def get_marker_category(cls_name):
-    """根据类名判断属于哪个分类"""
-    for cat_name, cat_info in MARKER_CATEGORIES.items():
-        for keyword in cat_info['keywords']:
-            if keyword in cls_name:
-                return cat_name
-    return None
+def get_color_from_classname(cls_name):
+    """根据类名生成稳定的颜色（使用哈希值）"""
+    if cls_name in _global_color_map:
+        return _global_color_map[cls_name]
+    
+    # 使用 MD5 哈希生成颜色
+    hash_obj = hashlib.md5(cls_name.encode('utf-8'))
+    hash_bytes = hash_obj.digest()
+    
+    # 取前3个字节作为 RGB，确保颜色明亮（值在 0.3-1.0 之间）
+    r = 0.3 + (hash_bytes[0] / 255.0) * 0.7
+    g = 0.3 + (hash_bytes[1] / 255.0) * 0.7
+    b = 0.3 + (hash_bytes[2] / 255.0) * 0.7
+    
+    color = (round(r, 4), round(g, 4), round(b, 4))
+    _global_color_map[cls_name] = color
+    _global_color_list.append(f"{cls_name} -> ({color[0]:.4f}, {color[1]:.4f}, {color[2]:.4f})")
+    return color
 
-def get_marker_color(cls_name):
-    for cat_info in MARKER_CATEGORIES.values():
-        for keyword in cat_info['keywords']:
-            if keyword in cls_name:
-                return cat_info['color']
-    return (0.5, 0.5, 0.5)
-
-def select_marker_categories():
-    """交互式选择要导出的标记分类（批量时在开头显示）"""
-    print("\n" + "=" * 55)
-    print("   标记分类选择（输入序号切换，回车完成）")
-    print("=" * 55)
-    print()
-    
-    categories = list(MARKER_CATEGORIES.keys())
-    for i, cat in enumerate(categories, 1):
-        status = "✅" if MARKER_CATEGORIES[cat]['enabled'] else "❌"
-        print(f"  {i:2}. {status} {cat}")
-    
-    print()
-    print("  0. 全部启用")
-    print("  a. 全部禁用")
-    print()
-    
-    while True:
-        choice = input("请输入序号 (1-14, 0, a，回车完成): ").strip()
-        if choice == '':
-            break
-        elif choice == '0':
-            for cat in categories:
-                MARKER_CATEGORIES[cat]['enabled'] = True
-            print("✅ 已启用所有标记分类")
-        elif choice.lower() == 'a':
-            for cat in categories:
-                MARKER_CATEGORIES[cat]['enabled'] = False
-            print("❌ 已禁用所有标记分类")
-        elif choice.isdigit():
-            idx = int(choice)
-            if 1 <= idx <= len(categories):
-                cat = categories[idx-1]
-                MARKER_CATEGORIES[cat]['enabled'] = not MARKER_CATEGORIES[cat]['enabled']
-                status = "✅" if MARKER_CATEGORIES[cat]['enabled'] else "❌"
-                print(f"  {idx:2}. {status} {cat}")
-            else:
-                print("❌ 无效序号")
-        else:
-            print("❌ 无效输入")
-    
-    enabled = [cat for cat in categories if MARKER_CATEGORIES[cat]['enabled']]
-    print(f"\n将导出标记: {', '.join(enabled) if enabled else '无'}")
-    return enabled
+def save_global_color_map(color_path):
+    """保存全局颜色映射文件"""
+    try:
+        with open(color_path, 'w', encoding='utf-8') as f:
+            f.write("# 全局类名 -> RGB颜色映射表\n")
+            f.write(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("# 此映射表在批量处理所有地图时共享，保证同一类名颜色一致\n")
+            f.write("#" + "=" * 78 + "\n\n")
+            for line in sorted(_global_color_list):
+                f.write(line + "\n")
+        return True
+    except Exception as e:
+        print(f"❌ 保存颜色映射失败: {e}")
+        return False
 
 # ============================================================
 # 颜色
@@ -160,25 +121,11 @@ class Colors:
     BOLD = '\033[1m'
     END = '\033[0m'
 
-CLASS_COLORS = {
-    'LevelMesh':(0.7,0.7,0.7), 'Marker':(1.0,0.8,0.2), 'Npc':(0.2,0.8,0.2),
-    'MeditationArea':(0.3,0.5,1.0), 'Portal':(1.0,0.3,0.3), 'Checkpoint':(1.0,0.5,0.0),
-    'Boundary':(1.0,0.0,0.0), 'Wind':(0.5,0.8,1.0), 'Water':(0.2,0.5,1.0),
-    'Timeline':(0.8,0.3,0.8), 'Enable':(0.5,0.5,0.5), 'SpawnMotes':(1.0,1.0,0.5),
-    'SoundEmitter':(0.2,0.8,0.8), 'PointLight':(1.0,0.9,0.4), 'Flame':(1.0,0.4,0.1),
-}
-DEFAULT_COLOR = (0.5,0.5,0.5)
+DEFAULT_COLOR = (0.5, 0.5, 0.5)
 
 # ============================================================
 # 工具函数
 # ============================================================
-def get_class_color(cls_name):
-    for key, color in CLASS_COLORS.items():
-        if key in cls_name:
-            return color
-    return DEFAULT_COLOR
-
-# 小球（修复镜像：翻转 X 和 Z）
 def make_sphere_verts(cx, cy, cz, radius=0.5, segments=8):
     verts = []
     faces = []
@@ -210,7 +157,6 @@ def make_sphere_verts(cx, cy, cz, radius=0.5, segments=8):
             faces.append((a, d, c))
     return verts, faces
 
-# 变换矩阵（修复镜像：翻转 X 和 Z）
 def apply_transform(verts, raw_floats):
     if len(raw_floats) < 16:
         return verts
@@ -476,11 +422,10 @@ def find_all_levelmesh_with_resources(json_data):
             })
     return results
 
-def find_markers_by_category(json_data, enabled_categories):
-    """按分类提取标记点"""
+def find_all_markers(json_data):
+    """提取所有非 LevelMesh 的有坐标节点"""
     markers = []
     bst_nodes = json_data.get('BSTNodes', {})
-    enabled_set = set(enabled_categories) if enabled_categories else set()
     
     for node_name, node_data in bst_nodes.items():
         if not isinstance(node_data, dict):
@@ -493,29 +438,86 @@ def find_markers_by_category(json_data, enabled_categories):
             
             coords, _ = extract_transform_from_cls_data(cls_data)
             if coords:
-                category = get_marker_category(cls_name)
-                if category and category in enabled_set:
-                    markers.append({
-                        'name': node_name,
-                        'class': cls_name,
-                        'category': category,
-                        'x': coords[0], 'y': coords[1], 'z': coords[2],
-                        'color': get_marker_color(cls_name)
-                    })
-                elif not category and '其他' in enabled_set:
-                    markers.append({
-                        'name': node_name,
-                        'class': cls_name,
-                        'category': '其他',
-                        'x': coords[0], 'y': coords[1], 'z': coords[2],
-                        'color': DEFAULT_COLOR
-                    })
+                markers.append({
+                    'name': node_name,
+                    'class': cls_name,
+                    'x': coords[0], 'y': coords[1], 'z': coords[2],
+                })
+    
     return markers
+
+def select_marker_categories(markers):
+    """让用户选择要导出的标记类名"""
+    if not markers:
+        return []
+    
+    # 收集所有类名并去重排序
+    class_names = sorted(set(m['class'] for m in markers))
+    
+    print("\n" + "=" * 55)
+    print("   标记类名选择（输入序号切换，回车完成）")
+    print("=" * 55)
+    print()
+    print("  提示：所有类名都会自动生成颜色，无需预设")
+    print()
+    
+    # 显示类名列表
+    selected = {cn: True for cn in class_names}
+    
+    for i, cn in enumerate(class_names, 1):
+        status = "✅" if selected[cn] else "❌"
+        # 截断过长的类名
+        display_cn = cn if len(cn) <= 40 else cn[:37] + "..."
+        print(f"  {i:3}. {status} {display_cn}")
+    
+    print()
+    print("  0. 全部启用")
+    print("  a. 全部禁用")
+    print()
+    
+    while True:
+        choice = input("请输入序号 (1-{0}, 0, a，回车完成): ".format(len(class_names))).strip()
+        if choice == '':
+            break
+        elif choice == '0':
+            for cn in class_names:
+                selected[cn] = True
+            print("✅ 已启用所有类名")
+            for i, cn in enumerate(class_names, 1):
+                status = "✅" if selected[cn] else "❌"
+                print(f"  {i:3}. {status} {cn[:40]}")
+        elif choice.lower() == 'a':
+            for cn in class_names:
+                selected[cn] = False
+            print("❌ 已禁用所有类名")
+            for i, cn in enumerate(class_names, 1):
+                status = "✅" if selected[cn] else "❌"
+                print(f"  {i:3}. {status} {cn[:40]}")
+        elif choice.isdigit():
+            idx = int(choice)
+            if 1 <= idx <= len(class_names):
+                cn = class_names[idx-1]
+                selected[cn] = not selected[cn]
+                status = "✅" if selected[cn] else "❌"
+                print(f"  {idx:3}. {status} {cn[:40]}")
+            else:
+                print("❌ 无效序号")
+        else:
+            print("❌ 无效输入")
+    
+    enabled = [cn for cn in class_names if selected[cn]]
+    print(f"\n将导出标记: {len(enabled)} 个类名")
+    if enabled and len(enabled) <= 20:
+        for cn in enabled:
+            print(f"    - {cn[:50]}")
+    elif enabled:
+        print(f"    ... 共 {len(enabled)} 个类名")
+    return enabled
 
 # ============================================================
 # 单个地图导出
 # ============================================================
-def export_single_map(map_folder, mesh_folder, output_base_dir, export_markers, enabled_categories, log_entry):
+def export_single_map(map_folder, mesh_folder, output_base_dir, export_markers, enabled_classes, log_entry):
     map_name = os.path.basename(map_folder)
     output_dir = os.path.join(output_base_dir, map_name)
     os.makedirs(output_dir, exist_ok=True)
@@ -568,10 +570,12 @@ def export_single_map(map_folder, mesh_folder, output_base_dir, export_markers, 
     log_entry['levelmesh_count'] = len(level_meshes)
     log_entry['unique_resources'] = len(unique_resources)
     
-    # 4. 提取标记（按分类过滤）
+    # 4. 提取标记
     markers = []
-    if export_markers and enabled_categories:
-        markers = find_markers_by_category(json_data, enabled_categories)
+    if export_markers and enabled_classes:
+        all_markers = find_all_markers(json_data)
+        enabled_set = set(enabled_classes)
+        markers = [m for m in all_markers if m['class'] in enabled_set]
     log_entry['markers_count'] = len(markers)
     
     # 5. 地形
@@ -626,14 +630,20 @@ def export_single_map(map_folder, mesh_folder, output_base_dir, export_markers, 
     obj_path = os.path.join(output_dir, f"{map_name}.obj")
     mtl_path = os.path.join(output_dir, f"{map_name}.mtl")
     
+    # 收集所有需要写入 MTL 的材质（标记类名）
+    marker_classes = set(m['class'] for m in markers) if markers else set()
+    
     try:
         with open(mtl_path, 'w', encoding='utf-8') as mf:
+            mf.write("# Sky Map Materials (Auto-generated colors)\n")
+            mf.write("# Colors are generated from class name hash\n\n")
             mf.write("newmtl terrain\nKd 0.45 0.42 0.38\nKa 0.1 0.1 0.1\nKs 0.0 0.0 0.0\nd 1.0\n\n")
             mf.write("newmtl model\nKd 0.75 0.73 0.68\nKa 0.1 0.1 0.1\nKs 0.0 0.0 0.0\nd 1.0\n\n")
-            for cat_name, cat_info in MARKER_CATEGORIES.items():
-                color = cat_info['color']
-                mf.write(f"newmtl marker_{cat_name}\nKd {color[0]:.4f} {color[1]:.4f} {color[2]:.4f}\nKa 0.1 0.1 0.1\nKs 0.0 0.0 0.0\nd 1.0\n\n")
-            mf.write("newmtl default\nKd 0.5 0.5 0.5\nKa 0.1 0.1 0.1\nKs 0.0 0.0 0.0\nd 1.0\n")
+            
+            for cls_name in sorted(marker_classes):
+                color = get_color_from_classname(cls_name)
+                safe_name = cls_name.replace(' ', '_').replace('(', '_').replace(')', '_').replace('>', '_').replace('<', '_')
+                mf.write(f"newmtl {safe_name}\nKd {color[0]:.4f} {color[1]:.4f} {color[2]:.4f}\nKa 0.1 0.1 0.1\nKs 0.0 0.0 0.0\nd 1.0\n\n")
         
         global_v = 1
         
@@ -667,22 +677,18 @@ def export_single_map(map_folder, mesh_folder, output_base_dir, export_markers, 
                     global_v += len(transformed)
                 f.write("\n")
             
-            # 标记小球（按分类分组）
             if export_markers and markers:
-                markers_by_cat = {}
+                markers_by_class = {}
                 for m in markers:
-                    cat = m.get('category', '其他')
-                    if cat not in markers_by_cat:
-                        markers_by_cat[cat] = []
-                    markers_by_cat[cat].append(m)
+                    cls = m['class']
+                    if cls not in markers_by_class:
+                        markers_by_class[cls] = []
+                    markers_by_class[cls].append(m)
                 
-                for cat_name, nodes in markers_by_cat.items():
-                    if cat_name in MARKER_CATEGORIES:
-                        mtl_name = f"marker_{cat_name}"
-                    else:
-                        mtl_name = 'default'
-                    f.write(f"o {cat_name}_Markers\nusemtl {mtl_name}\n")
-                    f.write(f"# {len(nodes)} 个 {cat_name} 标记点\n")
+                for cls_name, nodes in sorted(markers_by_class.items()):
+                    safe_name = cls_name.replace(' ', '_').replace('(', '_').replace(')', '_').replace('>', '_').replace('<', '_')
+                    f.write(f"o {safe_name}_Markers\nusemtl {safe_name}\n")
+                    f.write(f"# {len(nodes)} 个 {cls_name} 节点\n")
                     for node in nodes:
                         verts, faces = make_sphere_verts(node['x'], node['y'], node['z'], 0.5)
                         for v in verts:
@@ -720,13 +726,52 @@ def find_map_folders(level_dir):
                 continue
     return map_folders
 
-def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categories):
+def get_available_classes(level_dir):
+    """从第一个地图获取可用的类名列表（用于交互式选择）"""
+    map_folders = find_map_folders(level_dir)
+    if not map_folders:
+        return []
+    
+    # 尝试第一个地图
+    for map_folder in map_folders[:3]:  # 尝试前3个地图
+        bin_file = None
+        for f in os.listdir(map_folder):
+            if f.endswith('.bin') and not f.endswith('.meshes'):
+                bin_file = os.path.join(map_folder, f)
+                break
+        
+        if bin_file:
+            temp_dir = os.path.join(map_folder, '.temp')
+            os.makedirs(temp_dir, exist_ok=True)
+            json_path = convert_bin_to_json(bin_file, temp_dir)
+            if json_path:
+                try:
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        json_data = json.load(f)
+                    markers = find_all_markers(json_data)
+                    if markers:
+                        # 清理临时文件
+                        try:
+                            shutil.rmtree(temp_dir)
+                        except:
+                            pass
+                        return sorted(set(m['class'] for m in markers))
+                except:
+                    pass
+                try:
+                    shutil.rmtree(temp_dir)
+                except:
+                    pass
+    
+    return []
+
+def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_classes):
     print(f"\n{Colors.BOLD}📂 Level 目录: {level_dir}{Colors.END}")
     print(f"{Colors.BOLD}📦 Mesh 目录: {mesh_dir}{Colors.END}")
     print(f"{Colors.BOLD}📁 输出目录: {output_dir}{Colors.END}")
     print(f"{Colors.BOLD}🏷️  导出标记: {'是' if export_markers else '否'}{Colors.END}")
-    if export_markers and enabled_categories:
-        print(f"{Colors.BOLD}📌 标记分类: {', '.join(enabled_categories)}{Colors.END}")
+    if export_markers and enabled_classes:
+        print(f"{Colors.BOLD}📌 标记类名数量: {len(enabled_classes)}{Colors.END}")
     print()
     
     map_folders = find_map_folders(level_dir)
@@ -754,7 +799,7 @@ def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categorie
         'mesh_dir': mesh_dir,
         'output_dir': output_dir,
         'export_markers': export_markers,
-        'enabled_categories': enabled_categories if export_markers else [],
+        'enabled_classes': enabled_classes if export_markers else [],
         'total_maps': len(map_folders),
         'success_count': 0,
         'fail_count': 0,
@@ -768,7 +813,7 @@ def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categorie
         print(f"\n[{i}/{len(map_folders)}] {map_name}")
         
         log_entry = {}
-        success = export_single_map(map_folder, mesh_dir, output_dir, export_markers, enabled_categories, log_entry)
+        success = export_single_map(map_folder, mesh_dir, output_dir, export_markers, enabled_classes, log_entry)
         
         if success:
             log_data['success_count'] += 1
@@ -805,8 +850,8 @@ def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categorie
         f.write(f"Mesh 目录: {log_data['mesh_dir']}\n")
         f.write(f"输出目录: {log_data['output_dir']}\n")
         f.write(f"导出标记: {'是' if export_markers else '否'}\n")
-        if export_markers and enabled_categories:
-            f.write(f"标记分类: {', '.join(enabled_categories)}\n")
+        if export_markers and enabled_classes:
+            f.write(f"标记类名数量: {len(enabled_classes)}\n")
         f.write(f"总地图数: {log_data['total_maps']}\n")
         f.write(f"成功数: {log_data['success_count']}\n")
         f.write(f"失败数: {log_data['fail_count']}\n")
@@ -829,6 +874,10 @@ def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categorie
                 f.write(f"   错误: {m.get('error', '未知')}\n")
             f.write("\n")
     
+    # 保存全局颜色映射
+    color_path = os.path.join(log_dir, f"colors_{timestamp}.txt")
+    save_global_color_map(color_path)
+    
     print(f"\n{Colors.BOLD}{'='*60}{Colors.END}")
     print(f"{Colors.BOLD}📊 批量导出完成！{Colors.END}")
     print(f"{Colors.BOLD}{'='*60}{Colors.END}")
@@ -837,22 +886,26 @@ def run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categorie
     print(f"{Colors.RED}   失败: {log_data['fail_count']}{Colors.END}")
     print(f"   成功率: {log_data['success_rate']}")
     print(f"   总耗时: {elapsed_all:.1f} 秒")
+    print(f"   颜色映射: {len(_global_color_map)} 种颜色")
     print(f"\n📝 日志文件:")
     print(f"   TXT: {txt_path}")
     print(f"   JSON: {json_path}")
+    print(f"🎨 颜色映射: {color_path}")
 
 # ============================================================
 # 主函数
 # ============================================================
 def main():
     print("=" * 55)
-    print("   批量地图导出工具 v6.6 - 修复镜像")
+    print("   批量地图导出工具 v7.0 - 自动生成颜色")
     print("   输出到和 level 同级的'输出'文件夹")
     print("=" * 55)
     print()
-    print("标记分类说明：")
-    print("  传送门、冥想区、NPC、检查点、标记点、边界、风力、水体、")
-    print("  时间轴、启用开关、粒子生成、音效、光源、火焰")
+    print("说明：")
+    print("  - 标记类名会自动从地图 JSON 中提取")
+    print("  - 每个类名自动生成颜色（基于哈希值）")
+    print("  - 可自由选择要导出的类名")
+    print("  - 颜色映射表会保存到输出目录")
     print()
     
     level_dir = input(f"{Colors.CYAN}Level 目录路径: {Colors.END}").strip().strip('"').strip("'")
@@ -867,20 +920,27 @@ def main():
         print(f"{Colors.RED}❌ Mesh 目录不存在: {mesh_dir}{Colors.END}")
         return
     
-    # 询问是否导出标记小球
     export_markers_input = input(f"{Colors.CYAN}是否导出标记小球? (y/n, 默认 y): {Colors.END}").strip().lower()
     export_markers = export_markers_input != 'n'
     
-    enabled_categories = None
+    enabled_classes = None
     if export_markers:
-        enabled_categories = select_marker_categories()
+        print(f"\n{Colors.CYAN}正在扫描地图获取可用的类名...{Colors.END}")
+        all_classes = get_available_classes(level_dir)
+        if all_classes:
+            enabled_classes = select_marker_categories(
+                [{'class': c} for c in all_classes]
+            )
+        else:
+            print(f"{Colors.YELLOW}⚠️ 无法获取类名列表，将导出所有标记{Colors.END}")
+            enabled_classes = None
     
     # 输出目录：和 level 同级的"输出"文件夹
     level_parent = os.path.dirname(level_dir.rstrip('/\\'))
     output_dir = os.path.join(level_parent, "输出")
     print(f"{Colors.CYAN}输出目录: {output_dir}{Colors.END}")
     
-    run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_categories)
+    run_batch(level_dir, mesh_dir, output_dir, export_markers, enabled_classes)
     
     input(f"\n{Colors.CYAN}按回车退出...{Colors.END}")
 
