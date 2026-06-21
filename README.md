@@ -212,3 +212,11 @@ potato-提供部分脚本
 Miau-提供部分脚本
 
 十二-制作
+
+参考项目:
+
+https://github.com/ThatSkyOldServer/SkyBstbake   -meshes-雨人and落秋
+
+https://github.com/skyIshier/Sky-.bin-reader-python-zh   -bin-十二
+
+https://github.com/Miau0x1/Sky-.bin-reader   -bin-Miay
