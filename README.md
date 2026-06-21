@@ -219,4 +219,4 @@ https://github.com/ThatSkyOldServer/SkyBstbake   -meshes-雨人and落秋
 
 https://github.com/skyIshier/Sky-.bin-reader-python-zh   -bin-十二
 
-https://github.com/Miau0x1/Sky-.bin-reader   -bin-Miay
+https://github.com/Miau0x1/Sky-.bin-reader   -bin-Miau
