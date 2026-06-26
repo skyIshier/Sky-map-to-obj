@@ -2,7 +2,6 @@
 
 > 一键导出《光·遇》游戏地图数据，支持地形、模型、交互标记，适配 Blender 等 3D 软件。
 
----
 
 ## 📦 项目简介
 
@@ -14,36 +13,23 @@
 
 支持所有版本的 `.meshes` 文件（v57+ 及旧版本）。
 
----
 
 ## 📁 文件结构
 
 ```
-
 光遇地图导出工具/
 ├── 启动.py                    # ⭐ 单地图导出（推荐）
-
 ├── 批量地图转换.py             # 📦 批量导出
-
 ├── Sky_Bstbake.py             # 🧠 核心地形解析引擎
-
 ├── meshtoobj.py               # 🧩 .mesh 模型解析器
-
 ├── bintojson.py               # 🔄 .bin ↔ .json 转换器
-
 ├── zh字典.py                  # 🌐 中文翻译表（可选）
-
 ├── mesh/                      # 📂 存放 .mesh 模型文件
-
 ├── _meshopt/                  # 🪟 Windows 专用（meshopt2.dll）
-
 ├── README.md                  # 说明文档（当前文件）
-
 └── README-en.md               # English version
-
 ```
 
----
 
 ## 🔧 安装依赖
 
@@ -54,88 +40,78 @@ pkg install python clang cmake make binutils git
 pip install lz4 meshoptimizer
 ```
 
-Windows / Linux / Mac
-
+### Windows / Linux / Mac
 ```bash
 pip install lz4 meshoptimizer
 ```
 
----
 
-🚀 使用方法
+## 🚀 使用方法
 
-一、单地图导出（最常用）
-
+### 一、单地图导出（最常用）
 ```bash
 python 启动.py
 ```
 
 按提示输入：
-
-1. 地图文件夹路径（包含 Objects.level.bin 的目录）
-2. mesh 文件夹路径（存放 .mesh 文件的目录）
+1. 地图文件夹路径（包含 `Objects.level.bin` 的目录）
+2. mesh 文件夹路径（存放 `.mesh` 文件的目录）
 3. 是否导出标记小球（y/n）
 
-输出：地图文件夹/[地图名]_export/[地图名].obj
+**输出**：`地图文件夹/[地图名]_export/[地图名].obj`
 
----
 
-二、批量导出
-
+### 二、批量导出
 ```bash
 python 批量地图转换.py
 ```
 
 按提示输入：
-
 1. Level 目录路径（包含所有地图子文件夹的上级目录）
 2. mesh 文件夹路径
 3. 是否导出标记小球
 
-输出：Level 同级目录/输出/[地图名]/[地图名].obj
-日志：Level 同级目录/输出/batch_export_时间戳.txt
+**输出**：`Level 同级目录/输出/[地图名]/[地图名].obj`
+**日志**：`Level 同级目录/输出/batch_export_时间戳.txt`
 
----
 
-三、直接使用核心脚本
-
+### 三、直接使用核心脚本
 ```bash
 python Sky_Bstbake.py --unpack Dawn.meshes --export-obj
 ```
 
----
 
-📤 输出文件说明
+## 📤 输出文件说明
 
 导出的 OBJ 文件包含三部分：
 
-部分 说明
-地形 (Terrain) 地图基础地面网格，包含顶点(v)和法线(vn)，材质 terrain（灰棕色）
-模型实例 场景中的石头、建筑、蝴蝶等，每个实例独立命名，已应用 Transform 矩阵，材质 model（浅灰色），Z 轴已翻转（适配 Blender）
-标记小球（可选） 代替 NPC、传送门、冥想区等交互点，不同类用不同颜色区分，半径 0.5 米
+| 部分 | 说明 |
+|------|------|
+| **地形 (Terrain)** | 地图基础地面网格，包含顶点(v)和法线(vn)，材质 `terrain`（灰棕色） |
+| **模型实例** | 场景中的石头、建筑、蝴蝶等，每个实例独立命名，已应用 Transform 矩阵，材质 `model`（浅灰色），Z 轴已翻转（适配 Blender） |
+| **标记小球（可选）** | 代替 NPC、传送门、冥想区等交互点，不同类用不同颜色区分，半径 0.5 米 |
 
----
 
-🎨 标记小球颜色对照表
+## 🎨 标记小球颜色对照表
 
-类名关键词 颜色
-LevelMesh 灰色 (0.70, 0.70, 0.70)
-Marker 金色 (1.00, 0.80, 0.20)
-Npc 绿色 (0.20, 0.80, 0.20)
-MeditationArea 蓝色 (0.30, 0.50, 1.00)
-Portal 红色 (1.00, 0.30, 0.30)
-Checkpoint 橙色 (1.00, 0.50, 0.00)
-Boundary 纯红 (1.00, 0.00, 0.00)
-Wind 天蓝 (0.50, 0.80, 1.00)
-Water 深蓝 (0.20, 0.50, 1.00)
-Timeline 紫色 (0.80, 0.30, 0.80)
-SoundEmitter 青色 (0.20, 0.80, 0.80)
-PointLight 暖黄 (1.00, 0.90, 0.40)
-Flame 橙红 (1.00, 0.40, 0.10)
+| 类名关键词 | 颜色 |
+|------------|------|
+| LevelMesh | 灰色 (0.70, 0.70, 0.70) |
+| Marker | 金色 (1.00, 0.80, 0.20) |
+| Npc | 绿色 (0.20, 0.80, 0.20) |
+| MeditationArea | 蓝色 (0.30, 0.50, 1.00) |
+| Portal | 红色 (1.00, 0.30, 0.30) |
+| Checkpoint | 橙色 (1.00, 0.50, 0.00) |
+| Boundary | 纯红 (1.00, 0.00, 0.00) |
+| Wind | 天蓝 (0.50, 0.80, 1.00) |
+| Water | 深蓝 (0.20, 0.50, 1.00) |
+| Timeline | 紫色 (0.80, 0.30, 0.80) |
+| SoundEmitter | 青色 (0.20, 0.80, 0.80) |
+| PointLight | 暖黄 (1.00, 0.90, 0.40) |
+| Flame | 橙红 (1.00, 0.40, 0.10) |
 
----
 
-📋 运行示例
+## 📋 运行示例
 
 ```
 ☁️ 地图可视化导出 v18 (自动生成颜色)
@@ -175,50 +151,46 @@ mesh 文件夹路径 (默认: 脚本同目录/mesh): /storage/mesh
    OBJ: /storage/maps/Dawn/Dawn_export/Dawn.obj
 ```
 
----
 
-❓ 常见问题
+## ❓ 常见问题
 
-问题 解决方法
-Q1: 提示“缺少 lz4 库” 运行 pip install lz4
-Q2: 提示“meshoptimizer 模块未找到” 运行 pip install meshoptimizer；Termux 需先安装 clang/cmake
-Q3: 地形为 0 顶点 meshopt 解码失败，检查 meshoptimizer 是否正确安装
-Q4: 模型缺失（.mesh 不存在） 需要从游戏资源包中提取对应的 .mesh 文件
-Q5: Windows 上 meshopt 解码失败 将 meshopt2.dll 放入 _meshopt/ 文件夹
-Q6: 批量导出时某些地图失败 查看生成的 batch_export_*.txt 日志文件
+| 问题 | 解决方法 |
+|------|----------|
+| **Q1: 提示"缺少 lz4 库"** | 运行 `pip install lz4` |
+| **Q2: 提示"meshoptimizer 模块未找到"** | 运行 `pip install meshoptimizer`；Termux 需先安装 `clang/cmake` |
+| **Q3: 地形为 0 顶点** | meshopt 解码失败，检查 meshoptimizer 是否正确安装 |
+| **Q4: 模型缺失（.mesh 不存在）** | 需要从游戏资源包中提取对应的 `.mesh` 文件 |
+| **Q5: Windows 上 meshopt 解码失败** | 将 `meshopt2.dll` 放入 `_meshopt/` 文件夹 |
+| **Q6: 批量导出时某些地图失败** | 查看生成的 `batch_export_*.txt` 日志文件 |
 
----
 
-🛠️ 技术信息
+## 🛠️ 技术信息
 
-项目 说明
-支持版本 LVL04 – LVL0D（v57+ 完整支持）
-解码库 meshoptimizer（官方 Python 绑定）
-压缩 LZ4 block
-格式 TGCL (BSTNodes) + GEO0 (meshopt)
+| 项目 | 说明 |
+|------|------|
+| 支持版本 | LVL04 – LVL0D（v57+ 完整支持） |
+| 解码库 | meshoptimizer（官方 Python 绑定） |
+| 压缩 | LZ4 block |
+| 格式 | TGCL (BSTNodes) + GEO0 (meshopt) |
 
----
 
-🙏 致谢
+## 🙏 致谢
 
-贡献者 贡献
-雨人 (checion) 部分脚本
-落秋 (Heriel) 部分脚本
-potato 部分脚本
-Miau 部分脚本
-十二 制作整合
+| 贡献者 | 贡献 |
+|--------|------|
+| 雨人 (checion) | 部分脚本 |
+| 落秋 (Heriel) | 部分脚本 |
+| potato | 部分脚本 |
+| Miau | 部分脚本 |
+| 十二 | 制作整合 |
 
-参考项目：
+**参考项目：**
+- [SkyBstbake](https://github.com/ThatSkyOldServer/SkyBstbake) — meshes 解析（雨人 & 落秋）
+- [Sky-.bin-reader-python-zh](https://github.com/skyIshier/Sky-.bin-reader-python-zh) — bin 解析（十二）
+- [Sky-.bin-reader](https://github.com/Miau0x1/Sky-.bin-reader) — bin 解析（Miau）
 
-https://github.com/ThatSkyOldServer/SkyBstbake   -meshes-雨人and落秋
 
-https://github.com/skyIshier/Sky-.bin-reader-python-zh   -bin-十二
-
-https://github.com/Miau0x1/Sky-.bin-reader   -bin-Miau
-
----
-
-📄 许可证
+## 📄 许可证
 
 本项目仅供学习与研究使用，请勿用于商业用途。
 
