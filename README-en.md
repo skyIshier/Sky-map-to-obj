@@ -2,6 +2,7 @@
 
 > One-click export of Sky game map data, supporting terrain, models, and interactive markers. Compatible with Blender and other 3D software.
 
+[中文](./README.md) | [English](./README-en.md)
 
 ## 📦 Project Overview
 

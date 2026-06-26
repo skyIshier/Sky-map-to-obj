@@ -2,6 +2,7 @@
 
 > 一键导出《光·遇》游戏地图数据，支持地形、模型、交互标记，适配 Blender 等 3D 软件。
 
+[中文](./README.md) | [English](./README-en.md)
 
 ## 📦 项目简介
 
