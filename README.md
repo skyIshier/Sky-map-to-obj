@@ -1,38 +1,38 @@
-# 光遇地图可视化导出工具套件
+# Sky: Children of the Light — Map Visualization Export Toolkit
 
-> 一键导出《光·遇》游戏地图数据，支持地形、模型、交互标记，适配 Blender 等 3D 软件。
+> One-click export of Sky game map data, supporting terrain, models, and interactive markers. Compatible with Blender and other 3D software.
 
-[中文](./README.md) | [English](./README-en.md)
+[中文](./README-zh.md) | [English](./README.md)
 
-## 📦 项目简介
+## 📦 Project Overview
 
-本工具套件用于导出《光·遇》游戏地图的完整 3D 数据，包括：
+This toolkit exports complete 3D data from *Sky: Children of the Light* maps, including:
 
-- **地形网格** — 带法线，精细凹凸质感
-- **场景模型** — 石头、建筑、蝴蝶、NPC 等静态与动态物体
-- **交互标记** — 传送门、冥想区、NPC 位置等（可选小球标记）
+- **Terrain Mesh** — with normals for fine bump texture
+- **Scene Models** — rocks, buildings, butterflies, NPCs, and more
+- **Interaction Markers** — portals, meditation areas, NPC positions (optional spheres)
 
-支持所有版本的 `.meshes` 文件（v57+ 及旧版本）。
+Supports all `.meshes` file versions (v57+ and legacy).
 
 
-## 📁 文件结构
+## 📁 File Structure
 
 ```
-光遇地图导出工具/
-├── 启动.py                    # ⭐ 单地图导出（推荐）
-├── 批量地图转换.py             # 📦 批量导出
-├── Sky_Bstbake.py             # 🧠 核心地形解析引擎
-├── meshtoobj.py               # 🧩 .mesh 模型解析器
-├── bintojson.py               # 🔄 .bin ↔ .json 转换器
-├── zh字典.py                  # 🌐 中文翻译表（可选）
-├── mesh/                      # 📂 存放 .mesh 模型文件
-├── _meshopt/                  # 🪟 Windows 专用（meshopt2.dll）
-├── README.md                  # 说明文档（当前文件）
-└── README-en.md               # English version
+SkyMapExport/
+├── 启动.py                    # ⭐ Single map export (recommended)
+├── 批量地图转换.py             # 📦 Batch export
+├── Sky_Bstbake.py             # 🧠 Core terrain parsing engine
+├── meshtoobj.py               # 🧩 .mesh model parser
+├── bintojson.py               # 🔄 .bin ↔ .json converter
+├── zh字典.py                  # 🌐 Chinese translation table (optional)
+├── mesh/                      # 📂 Store .mesh model files
+├── _meshopt/                  # 🪟 Windows-specific (meshopt2.dll)
+├── README.md                  # Chinese documentation
+└── README-en.md               # English documentation (this file)
 ```
 
 
-## 🔧 安装依赖
+## 🔧 Installation
 
 ### Termux (Android)
 ```bash
@@ -47,152 +47,252 @@ pip install lz4 meshoptimizer
 ```
 
 
-## 🚀 使用方法
+## 🚀 Usage
 
-### 一、单地图导出（最常用）
+### 1. Single Map Export (Recommended)
 ```bash
 python 启动.py
 ```
 
-按提示输入：
-1. 地图文件夹路径（包含 `Objects.level.bin` 的目录）
-2. mesh 文件夹路径（存放 `.mesh` 文件的目录）
-3. 是否导出标记小球（y/n）
+Follow the prompts:
+1. Map folder path (contains `Objects.level.bin`)
+2. Mesh folder path (contains `.mesh` files)
+3. Export marker spheres? (y/n)
 
-**输出**：`地图文件夹/[地图名]_export/[地图名].obj`
+**Output**: `[map_folder]/[map_name]_export/[map_name].obj`
 
 
-### 二、批量导出
+### 2. Batch Export
 ```bash
 python 批量地图转换.py
 ```
 
-按提示输入：
-1. Level 目录路径（包含所有地图子文件夹的上级目录）
-2. mesh 文件夹路径
-3. 是否导出标记小球
+Follow the prompts:
+1. Level directory path (parent of all map subfolders)
+2. Mesh folder path
+3. Export marker spheres? (y/n)
 
-**输出**：`Level 同级目录/输出/[地图名]/[地图名].obj`
-**日志**：`Level 同级目录/输出/batch_export_时间戳.txt`
+**Output**: `[level_parent]/输出/[map_name]/[map_name].obj`
+**Log**: `[level_parent]/输出/batch_export_timestamp.txt`
 
 
-### 三、直接使用核心脚本
+### 3. Direct Core Script Usage
 ```bash
 python Sky_Bstbake.py --unpack Dawn.meshes --export-obj
 ```
 
 
-## 📤 输出文件说明
+## 📤 Output Description
 
-导出的 OBJ 文件包含三部分：
+The exported OBJ file contains three parts:
 
-| 部分 | 说明 |
-|------|------|
-| **地形 (Terrain)** | 地图基础地面网格，包含顶点(v)和法线(vn)，材质 `terrain`（灰棕色） |
-| **模型实例** | 场景中的石头、建筑、蝴蝶等，每个实例独立命名，已应用 Transform 矩阵，材质 `model`（浅灰色），Z 轴已翻转（适配 Blender） |
-| **标记小球（可选）** | 代替 NPC、传送门、冥想区等交互点，不同类用不同颜色区分，半径 0.5 米 |
-
-
-## 🎨 标记小球颜色对照表
-
-| 类名关键词 | 颜色 |
-|------------|------|
-| LevelMesh | 灰色 (0.70, 0.70, 0.70) |
-| Marker | 金色 (1.00, 0.80, 0.20) |
-| Npc | 绿色 (0.20, 0.80, 0.20) |
-| MeditationArea | 蓝色 (0.30, 0.50, 1.00) |
-| Portal | 红色 (1.00, 0.30, 0.30) |
-| Checkpoint | 橙色 (1.00, 0.50, 0.00) |
-| Boundary | 纯红 (1.00, 0.00, 0.00) |
-| Wind | 天蓝 (0.50, 0.80, 1.00) |
-| Water | 深蓝 (0.20, 0.50, 1.00) |
-| Timeline | 紫色 (0.80, 0.30, 0.80) |
-| SoundEmitter | 青色 (0.20, 0.80, 0.80) |
-| PointLight | 暖黄 (1.00, 0.90, 0.40) |
-| Flame | 橙红 (1.00, 0.40, 0.10) |
+| Part | Description |
+|------|-------------|
+| **Terrain** | Base ground mesh with vertices (v) and normals (vn), material `terrain` (grey-brown) |
+| **Model Instances** | Rocks, buildings, butterflies, etc. Each instance named separately. Transform matrix applied. Material `model` (light grey). Z-axis flipped (Blender-compatible) |
+| **Marker Spheres (optional)** | Replace NPCs, portals, meditation areas, etc. Different colors per class. Radius 0.5m |
 
 
-## 📋 运行示例
+## 🎨 Marker Color Reference
+
+| Class Keyword | Color |
+|---------------|-------|
+| LevelMesh | Grey (0.70, 0.70, 0.70) |
+| Marker | Gold (1.00, 0.80, 0.20) |
+| Npc | Green (0.20, 0.80, 0.20) |
+| MeditationArea | Blue (0.30, 0.50, 1.00) |
+| Portal | Red (1.00, 0.30, 0.30) |
+| Checkpoint | Orange (1.00, 0.50, 0.00) |
+| Boundary | Pure Red (1.00, 0.00, 0.00) |
+| Wind | Sky Blue (0.50, 0.80, 1.00) |
+| Water | Deep Blue (0.20, 0.50, 1.00) |
+| Timeline | Purple (0.80, 0.30, 0.80) |
+| SoundEmitter | Cyan (0.20, 0.80, 0.80) |
+| PointLight | Warm Yellow (1.00, 0.90, 0.40) |
+| Flame | Orange-Red (1.00, 0.40, 0.10) |
+
+
+## 📋 Example Run
 
 ```
-☁️ 地图可视化导出 v18 (自动生成颜色)
+☁️ Map Visualization Export v18 (Auto-generated colors)
 
-标记小球说明：
-  - 小球是代替 NPC、传送门、冥想区等交互点的标记
-  - 导出小球可以帮助定位这些交互点的位置
-  - 如果只需要地形和模型，可以选择不导出小球
+Marker Info:
+  - Spheres replace NPCs, portals, meditation areas, etc.
+  - Exporting spheres helps locate interaction points
+  - Choose 'n' if you only need terrain and models
 
-地图文件夹: /storage/maps/Dawn
-mesh 文件夹路径 (默认: 脚本同目录/mesh): /storage/mesh
-是否导出标记小球? (y/n, 默认 y): n
+Map folder: /storage/maps/Dawn
+Mesh folder (default: ./mesh): /storage/mesh
+Export markers? (y/n, default y): n
 
 📖 [.bin] Objects.level.bin
-   ⏳ 转换 bin → JSON ...
-   ✅ JSON 生成完成
-   📄 读取 JSON...
-   🔍 提取 LevelMesh 节点...
-   找到 790 个 LevelMesh 实例, 211 种资源
+   ⏳ Converting bin → JSON ...
+   ✅ JSON generation complete
+   📄 Reading JSON...
+   🔍 Extracting LevelMesh nodes...
+   Found 790 LevelMesh instances, 211 unique resources
 
 📖 [.meshes] BstBaked.meshes
    [GEO0] verts=109912, index_bytes=505071, tris=168357
    meshopt VB OK (109912 verts)
-   地形: 5978 顶点, 11890 三角形
+   Terrain: 5978 vertices, 11890 triangles
 
-📖 [.mesh] 加载模型 (目录: /storage/mesh)
+📖 [.mesh] Loading models (dir: /storage/mesh)
    ✅ AP07Butterfly (82v, 68t)
    ✅ S28_MigrationBoat_Busted (1837v, 1797t)
-   ...（共 209 种成功）
+   ... (209 total successful)
 
-📝 导出 OBJ...
+📝 Exporting OBJ...
 
-✅ 完成!
-   地形: 5,978 顶点, 11,890 三角形
-   模型: 209 种, 786 实例
-   标记: 2842 (已禁用)
+✅ Complete!
+   Terrain: 5,978 vertices, 11,890 triangles
+   Models: 209 types, 786 instances
+   Markers: 2842 (disabled)
    OBJ: /storage/maps/Dawn/Dawn_export/Dawn.obj
 ```
 
 
-## ❓ 常见问题
+## 🔄 Script Interface Translation Reference
 
-| 问题 | 解决方法 |
-|------|----------|
-| **Q1: 提示"缺少 lz4 库"** | 运行 `pip install lz4` |
-| **Q2: 提示"meshoptimizer 模块未找到"** | 运行 `pip install meshoptimizer`；Termux 需先安装 `clang/cmake` |
-| **Q3: 地形为 0 顶点** | meshopt 解码失败，检查 meshoptimizer 是否正确安装 |
-| **Q4: 模型缺失（.mesh 不存在）** | 需要从游戏资源包中提取对应的 `.mesh` 文件 |
-| **Q5: Windows 上 meshopt 解码失败** | 将 `meshopt2.dll` 放入 `_meshopt/` 文件夹 |
-| **Q6: 批量导出时某些地图失败** | 查看生成的 `batch_export_*.txt` 日志文件 |
+Since the scripts are written in Chinese, here is the translation table for all user-facing interfaces:
+
+### Main Scripts
+
+| Chinese Script | English Name | Function |
+|----------------|--------------|----------|
+| `启动.py` | `launch.py` | Single map export (recommended entry point) |
+| `批量地图转换.py` | `batch_convert.py` | Batch export all maps in a directory |
+| `Sky_Bstbake.py` | `Sky_Bstbake.py` | Core terrain parsing engine |
+| `meshtoobj.py` | `meshtoobj.py` | .mesh model file parser |
+| `bintojson.py` | `bintojson.py` | .bin ↔ .json converter |
+| `zh字典.py` | `zh_dict.py` | Chinese translation table (optional) |
+
+### User Prompts (启动.py / launch.py)
+
+| Chinese Prompt | English Translation |
+|----------------|---------------------|
+| 地图文件夹 | Map folder path |
+| mesh 文件夹路径 (默认: 脚本同目录/mesh) | Mesh folder path (default: ./mesh) |
+| 是否导出标记小球? (y/n, 默认 y) | Export marker spheres? (y/n, default y) |
+
+### User Prompts (批量地图转换.py / batch_convert.py)
+
+| Chinese Prompt | English Translation |
+|----------------|---------------------|
+| Level 目录路径 | Level directory path |
+| Mesh 文件夹路径 | Mesh folder path |
+| 是否导出标记小球? (y/n, 默认 y) | Export marker spheres? (y/n, default y) |
+| 标记类名选择 | Marker class selection |
+| 请输入序号 (1-X, 0, a，回车完成) | Enter number (1-X, 0, a, Enter to finish) |
+| 全部启用 | Enable all |
+| 全部禁用 | Disable all |
+| 是否开始批量导出? (y/n) | Start batch export? (y/n) |
+
+### Output Messages
+
+| Chinese Message | English Translation |
+|-----------------|---------------------|
+| 正在转换 bin → JSON | Converting bin → JSON |
+| JSON 生成完成 | JSON generation complete |
+| 读取 JSON | Reading JSON |
+| 提取 LevelMesh 节点 | Extracting LevelMesh nodes |
+| 加载模型 | Loading models |
+| 导出 OBJ | Exporting OBJ |
+| 完成! | Complete! |
+| 地形 | Terrain |
+| 顶点 | vertices |
+| 三角形 | triangles |
+| 模型 | Models |
+| 实例 | instances |
+| 标记 | Markers |
+| 成功 | Success |
+| 失败 | Failed |
+| 未知错误 | Unknown error |
+
+### Log File Contents
+
+| Chinese Term | English Translation |
+|--------------|---------------------|
+| 批量地图导出日志 | Batch Map Export Log |
+| 导出时间 | Export time |
+| Level 目录 | Level directory |
+| Mesh 目录 | Mesh directory |
+| 输出目录 | Output directory |
+| 导出标记 | Export markers |
+| 总地图数 | Total maps |
+| 成功数 | Success count |
+| 失败数 | Failed count |
+| 成功率 | Success rate |
+| 总耗时 | Total time |
+| 详细列表 | Detailed list |
+| 输出 | Output |
+| 错误 | Error |
+
+### Command Line Arguments (Sky_Bstbake.py)
+
+| Argument | Description |
+|----------|-------------|
+| `--unpack` | Specify .meshes file or directory to unpack |
+| `-r / --recursive` | Recursively process directories |
+| `--export-obj` | Export OBJ file during unpack |
+| `--out` | Specify output file path (for repack) |
 
 
-## 🛠️ 技术信息
+## ❓ FAQ
 
-| 项目 | 说明 |
-|------|------|
-| 支持版本 | LVL04 – LVL0D（v57+ 完整支持） |
-| 解码库 | meshoptimizer（官方 Python 绑定） |
-| 压缩 | LZ4 block |
-| 格式 | TGCL (BSTNodes) + GEO0 (meshopt) |
-
-
-## 🙏 致谢
-
-| 贡献者 | 贡献 |
-|--------|------|
-| 雨人 (checion) | 部分脚本 |
-| 落秋 (Heriel) | 部分脚本 |
-| potato | 部分脚本 |
-| Miau | 部分脚本 |
-| 十二 | 制作整合 |
-
-**参考项目：**
-- [SkyBstbake](https://github.com/ThatSkyOldServer/SkyBstbake) — meshes 解析（雨人 & 落秋）
-- [Sky-.bin-reader-python-zh](https://github.com/skyIshier/Sky-.bin-reader-python-zh) — bin 解析（十二）
-- [Sky-.bin-reader](https://github.com/Miau0x1/Sky-.bin-reader) — bin 解析（Miau）
+| Question | Solution |
+|----------|----------|
+| **Q1: "lz4 library not found"** | Run `pip install lz4` |
+| **Q2: "meshoptimizer module not found"** | Run `pip install meshoptimizer`; on Termux, install `clang/cmake` first |
+| **Q3: Terrain has 0 vertices** | meshopt decoding failed; check meshoptimizer installation |
+| **Q4: Models missing (.mesh not found)** | Extract corresponding `.mesh` files from game resources |
+| **Q5: meshopt decoding fails on Windows** | Place `meshopt2.dll` in `_meshopt/` folder |
+| **Q6: Some maps fail during batch export** | Check the generated `batch_export_*.txt` log |
 
 
-## 📄 许可证
+## 🛠️ Technical Information
 
-本项目仅供学习与研究使用，请勿用于商业用途。
+| Item | Details |
+|------|---------|
+| Supported Versions | LVL04 – LVL0D (v57+ fully supported) |
+| Decoding Library | meshoptimizer (official Python bindings) |
+| Compression | LZ4 block |
+| Format | TGCL (BSTNodes) + GEO0 (meshopt) |
 
-© 2026 光遇地图工具套件
+
+## 📧 Contact & Contributions
+
+If you have improved versions, bug fixes, or feature enhancements, please feel free to reach out:
+
+📧 **Email**: 3787533101@qq.com
+
+We welcome:
+- Bug reports with detailed reproduction steps
+- Pull requests or patches
+- Translation improvements
+- New feature suggestions
+- Compatibility fixes for new game versions
+
+
+## 🙏 Credits
+
+| Contributor | Contribution |
+|-------------|--------------|
+| 雨人 (checion) | Scripts |
+| 落秋 (Heriel) | Scripts |
+| potato | Scripts |
+| Miau | Scripts |
+| 十二 | Integration & packaging |
+
+**Reference Projects:**
+- [SkyBstbake](https://github.com/ThatSkyOldServer/SkyBstbake) — meshes parsing (雨人 & 落秋)
+- [Sky-.bin-reader-python-zh](https://github.com/skyIshier/Sky-.bin-reader-python-zh) — bin parsing (十二)
+- [Sky-.bin-reader](https://github.com/Miau0x1/Sky-.bin-reader) — bin parsing (Miau)
+
+
+## 📄 License
+
+This project is for educational and research purposes only. Not for commercial use.
+
+© 2026 Sky Map Toolkit
